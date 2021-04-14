@@ -10,6 +10,7 @@ use core::panic::PanicInfo;
 // diverging functions (returns !(never(not allowed to ever return)) type)
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
+    println!("{}", _info);
     loop {}
 }
 
@@ -22,7 +23,9 @@ fn panic(_info: &PanicInfo) -> ! {
 pub extern "C" fn _start() -> ! {
     // entry point
     //linker looks for a function named `_start` by default
-    vga_buffer::print_something();
+    println!("Hello, It's {}\n", "me");
+
+    println!("Hello from the other side");
 
     loop {}
 }

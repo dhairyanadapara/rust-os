@@ -1,6 +1,8 @@
 // #[repr] annotation: https://rust-lang.github.io/unsafe-code-guidelines/layout/enums.html
 
-use core::fmt::{Result, Write};
+use core::fmt::{Arguments, Result, Write};
+use lazy_static::lazy_static;
+use spin::Mutex;
 use volatile::Volatile;
 
 #[allow(dead_code)] // disables the warning for unused code
@@ -121,14 +123,29 @@ impl Write for Writer {
     }
 }
 
-pub fn print_something() {
-    let mut writer = Writer {
+lazy_static! {
+    pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_position: 0,
-        color_code: ColorCode::new(Color::Green, Color::Black),
+        color_code: ColorCode::new(Color::Yellow, Color::Black),
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
-    };
+    });
+}
 
-    writer.write_byte(b'H');
-    writer.write_string("ello ");
-    write!(writer, "The numbers are {} and {}", 42, 1.0 / 3.0).unwrap();
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => {
+        ($crate::vga_buffer::_print(format_args!($($arg)*)));
+    };
+}
+
+#[macro_export]
+macro_rules! println {
+    ($($args:tt)*) => {
+        ($crate::print!("{}\n", format_args!($($args)*)));
+    }
+}
+
+#[doc(hidden)]
+pub fn _print(args: Arguments) {
+    WRITER.lock().write_fmt(args).unwrap();
 }
